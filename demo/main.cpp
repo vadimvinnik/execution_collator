@@ -12,22 +12,8 @@
 #include <sstream>
 #include <thread>
 
-std::string get_tsask_title(int a, int b, int c) {
-  std::ostringstream stream;
-
-  stream
-    << "["
-    << std::setw(2)
-    << a
-    << ":"
-    << std::setw(2)
-    << b
-    << ":"
-    << std::setw(2)
-    << c
-    << "]";
-
-  return stream.str();
+std::string get_task_title(int a, char b) {
+  return std::to_string(a) + b;
 }
 
 void log(std::string const& task_title, std::string const& what) {
@@ -38,59 +24,55 @@ void log(std::string const& task_title, std::string const& what) {
 
   std::lock_guard<std::mutex> cout_lock(mx_cout);
   std::cout
-    << std::setw(10)
     << now_string
     << "    "
-    << std::setw(15)
     << task_title
     << "    "
     << what
     << std::endl;
 }
 
-std::uint64_t get_request_hash(int a, int b, int c) {
-  return b;
+int get_request_hash(int a, char b) {
+  return a;
 }
 
-int execute(int a, int b, int c) {
-  auto const title = get_tsask_title(a, b, c);
+std::string execute(int a, char b) {
+  auto const title = get_task_title(a, b);
 
   log(title, "start");
-  std::this_thread::sleep_for(std::chrono::seconds(c));
+  std::this_thread::sleep_for(std::chrono::seconds(1 + (a + b) % 5));
   log(title, "finish");
 
-  if (b > 50) {
-    throw std::invalid_argument("b must be less than 50");
+  static constexpr char const* const results[] = {
+    "Chatski",
+    "Onegin",
+    "Pechorin",
+    "Oblomov"
+  };
+
+  if (a >= std::size(results)) {
+    throw std::invalid_argument("a is out of bound");
   }
 
-  return b;
+  return results[a];
 }
 
-async::execution_collator<int, std::uint64_t, int, int, int> collator {
-  &get_request_hash,
-  &execute
-};
+using collator_t = function_wrapper::collator<std::string, int, int, char>;
+
+collator_t collator { &get_request_hash, &execute };
 
 struct demo_params_t {
   int a;
-  int b;
-  int c;
+  char b;
 };
 
 void perform_demo_call(demo_params_t const& params) {
-  auto const title = get_tsask_title(
-    params.a,
-    params.b,
-    params.c);
+  auto const title = get_task_title(params.a, params.b);
 
   log(title, "request");
   try {
-    auto const result = collator.execute(
-      params.a,
-      params.b,
-      params.c);
-
-    log(title, std::string("result: ") + std::to_string(result));
+    auto const result = collator.execute(params.a, params.b);
+    log(title, std::string("result: ") + result);
   }
   catch (std::exception const& e) {
     log(title, std::string("exception: ") + e.what());
@@ -103,18 +85,22 @@ std::thread start_demo_thread(demo_params_t const& params) {
 
 int main() {
   demo_params_t parameters[] = {
-    { 11, 10,  1 },
-    { 12, 10,  2 },
-    { 13, 10,  3 },
-    { 21, 20,  4 },
-    { 22, 20,  5 },
-    { 23, 20,  6 },
-    { 31, 60,  7 },
-    { 32, 60,  8 },
-    { 33, 60,  9 }
+    { 1, 'a' },
+    { 1, 'b' },
+    { 1, 'c' },
+    { 2, 'a' },
+    { 2, 'b' },
+    { 2, 'c' },
+    { 6, 'a' },
+    { 6, 'b' },
+    { 6, 'c' }
   };
 
   std::list<std::thread> threads;
+
+  std::cout
+    << "Starting multiple simultaneous calls"
+    << std::endl;
 
   std::transform(
     std::begin(parameters),
@@ -125,8 +111,13 @@ int main() {
   for (auto& thread : threads) {
     thread.join();
   }
+  
+  std::cout
+    << "All calls have finished. "
+    << "Performing one more"
+    <<std::endl;
 
-  perform_demo_call({ 14, 10, 1 });
+  perform_demo_call({ 1, 'd' });
 
   return 0;
 }

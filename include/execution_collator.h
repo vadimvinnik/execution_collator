@@ -8,10 +8,10 @@
 #include <optional>
 #include <map>
 
-namespace async {
+namespace function_wrapper {
 
 template <typename Result, typename Key, typename... Args>
-class execution_collator {
+class collator {
 public:
   using result_t = Result;
   using key_t = Key;
@@ -19,7 +19,7 @@ public:
   using request_executor_t = std::function<Result(Args...)>;
 
   template <typename KeyExtractor, typename RequestExecutor>
-  execution_collator(KeyExtractor key_extractor, RequestExecutor request_executor)
+  collator(KeyExtractor key_extractor, RequestExecutor request_executor)
     : key_extractor_(key_extractor)
     , request_executor_(request_executor)
   {}
@@ -120,5 +120,5 @@ private:
   executions_cache_t executions_cache_;
 };
 
-} // namespace async
+} // namespace function_wrapper
 
