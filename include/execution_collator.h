@@ -59,7 +59,7 @@ public:
     assert(result.has_value() || exception_ptr != nullptr);
 
     {
-      std::unique_lock<std::mutex> map_lock(mutex_);
+      std::lock_guard<std::mutex> map_lock(mutex_);
 
       --execution.ref_count;
 
@@ -101,7 +101,7 @@ private:
   using executions_iterator_t = typename executions_cache_t::iterator;
 
   executions_iterator_t find_or_create_execution(key_t const& key) {
-    std::unique_lock<std::mutex> map_lock(mutex_);
+    std::lock_guard<std::mutex> map_lock(mutex_);
 
     auto const it = executions_cache_.emplace(
       std::piecewise_construct,
